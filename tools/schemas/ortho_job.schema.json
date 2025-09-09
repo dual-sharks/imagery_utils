@@ -1,0 +1,91 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://pgc.umn.edu/schemas/imagery-utils/ortho_job.schema.json",
+	"title": "OrthoJobRequest",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["inputs", "output", "processing"],
+	"properties": {
+		"idempotency_key": {
+			"type": "string",
+			"description": "Client-provided unique key to deduplicate submissions"
+		},
+		"inputs": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["src"],
+			"properties": {
+				"src": {
+					"description": "Source image(s) or list file; absolute path or URL",
+					"oneOf": [
+						{"type": "string"},
+						{"type": "array", "items": {"type": "string"}, "minItems": 1}
+					]
+				},
+				"dem": {
+					"description": "DEM path/URL or 'auto'",
+					"type": "string"
+				},
+				"config_file": {
+					"description": "Config file path with gpkg_path for DEM auto selection",
+					"type": "string"
+				}
+			}
+		},
+		"output": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["dst"],
+			"properties": {
+				"dst": {"type": "string", "description": "Destination directory absolute path or URL"},
+				"format": {"type": "string", "enum": ["GTiff", "JP2OpenJPEG", "ENVI", "HFA", "JPEG"], "default": "GTiff"},
+				"gtiff_compression": {"type": "string", "enum": ["jpeg95", "lzw"], "default": "lzw"},
+				"to_cog": {"type": "boolean", "default": false}
+			}
+		},
+		"processing": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"epsg": {"type": ["integer", "string"], "description": "EPSG int, 'utm', or 'auto'"},
+				"epsg_utm_nad83": {"type": "boolean", "default": false},
+				"outtype": {"type": "string", "enum": ["Byte", "UInt16", "Float32"], "default": "Byte"},
+				"resolution": {
+					"description": "Target resolution (one value for square or two values [xres,yres])",
+					"oneOf": [
+						{"type": "number"},
+						{"type": "array", "items": {"type": "number"}, "minItems": 1, "maxItems": 2}
+					]
+				},
+				"stretch": {"type": "string", "enum": ["ns", "rf", "mr", "rd", "au"], "default": "rf"},
+				"resample": {"type": "string", "enum": ["near", "bilinear", "cubic", "cubicspline", "lanczos"], "default": "near"},
+				"tap": {"type": "boolean", "default": false},
+				"rgb": {"type": "boolean", "default": false},
+				"bgrn": {"type": "boolean", "default": false},
+				"skip_warp": {"type": "boolean", "default": false},
+				"skip_dem_overlap_check": {"type": "boolean", "default": false},
+				"no_pyramids": {"type": "boolean", "default": false},
+				"pyramid_type": {"type": "string", "enum": ["near", "cubic"], "default": "near"},
+				"ortho_height": {"type": ["integer", "number", "null"], "description": "Constant elevation (meters)"},
+				"median_remove": {"type": "boolean", "default": false},
+				"include_all_ms": {"type": "boolean", "default": false}
+			}
+		},
+		"execution": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"executor": {"type": "string", "enum": ["local", "process", "celery", "slurm", "pbs", "dask"], "default": "local"},
+				"threads": {"type": ["integer", "string"], "description": "Positive int or 'ALL_CPUS'", "default": 1},
+				"parallel_processes": {"type": "integer", "minimum": 1, "default": 1},
+				"scratch": {"type": "string", "description": "Working directory path"},
+				"log": {"type": ["string", "null"], "description": "Optional log path"}
+			}
+		},
+		"metadata": {
+			"type": "object",
+			"description": "Opaque metadata the client wants echoed into the manifest",
+			"additionalProperties": true
+		}
+	}
+}

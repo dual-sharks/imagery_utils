@@ -1,0 +1,41 @@
+{
+	"idempotency_key": "2025-09-09-demo-0001",
+	"inputs": {
+		"src": "/data/imagery/src_dir",
+		"dem": "auto",
+		"config_file": "/app/doc/config.ini"
+	},
+	"output": {
+		"dst": "/data/imagery/ortho_out",
+		"format": "GTiff",
+		"gtiff_compression": "lzw",
+		"to_cog": false
+	},
+	"processing": {
+		"epsg": "auto",
+		"outtype": "Byte",
+		"resolution": [],
+		"stretch": "rf",
+		"resample": "near",
+		"tap": false,
+		"rgb": false,
+		"bgrn": false,
+		"skip_warp": false,
+		"skip_dem_overlap_check": false,
+		"no_pyramids": false,
+		"pyramid_type": "near",
+		"ortho_height": null,
+		"median_remove": false,
+		"include_all_ms": false
+	},
+	"execution": {
+		"executor": "local",
+		"threads": 1,
+		"parallel_processes": 1,
+		"scratch": "/tmp/pgc",
+		"log": null
+	},
+	"metadata": {
+		"project": "demo"
+	}
+}
