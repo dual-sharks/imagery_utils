@@ -1,0 +1,13 @@
+# Placeholder tolerances for Phase 0 QA harness
+radiometry:
+  # Mean absolute error per band (Byte)
+  mae_byte: 0
+  # Relative mean absolute error per band (Float32)
+  mae_rel_float32: 0.001
+georef:
+  # allowable area delta as fraction of footprint
+  area_frac: 1e-08
+  # centroid delta in pixels
+  centroid_pixels: 0.01
+cog:
+  require_valid: true
