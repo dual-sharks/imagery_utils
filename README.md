@@ -128,6 +128,26 @@ Each run emits a STAC‑like JSON manifest describing inputs, processing, proven
 ```
 “STAC‑like” means we follow the Item shape and common fields, while including additional processing/provenance fields (e.g., timings, GDAL/PROJ versions, chosen DEM). Full STAC conformance can be added later.
 
+## Task 5 – Support for Maxar Legion
+
+To ensure GAIA can ingest future high‑resolution sources, we will add Legion support without breaking existing flows (WV2/WV3). The work builds directly on today’s orthorectification pipeline and the Task 1 staging.
+
+Planned approach (backwards‑compatible)
+- Profiles, not code: introduce a Legion sensor profile (YAML) alongside WV series (see `tools/profiles/`). The profile will define band maps/order, native pixel size, pan:MS ratio (if applicable), expected metadata sources (IMD/RPB/XML/PVL), and radiometric constants.
+- Detection and metadata: extend the existing filename/metadata detection to recognize Legion; add a metadata parser that normalizes fields similarly to DG/GE/IK.
+- RPC + DEM: reuse the current RPC+DEM path (`-rpc` with either `RPC_DEM` or `RPC_HEIGHT`) for terrain correction; ensure `extract_rpb` supports Legion packaging (e.g., .RPB or xml inside a container).
+- Orthorectification: continue to use the current `lib/ortho_functions.process_image` pipeline with safe defaults; no changes required for users who do not process Legion.
+- DEM selection policy: keep the existing GeoPackage‑driven `--dem auto` semantics, while allowing a configured priority (PGC DEM → Copernicus 30 m → SRTM); record the chosen DEM in the manifest.
+- Azure‑ready output: provide optional `--to-cog` to produce COGs validated by `gdalinfo -json`; document VSICURL/Azure credential usage for reading/writing containers.
+- Staged runner: the API/runner calls the same library functions and emits a STAC‑like manifest with inputs, Legion profile name/version, chosen DEM, timings, and outputs.
+
+Validation plan
+- Unit tests for detection, metadata parsing, and radiometric LUTs for Legion (based on vendor specs).
+- E2E run on representative Legion samples: georeferencing tolerances (bbox/centroid/area), radiometric tolerances per band, and COG compliance.
+
+Status (this branch)
+- A Legion profile placeholder is included at `tools/profiles/LEGION.yaml`. When authoritative specs and samples are available, we will finalize detection, parsing, radiometry, and RPC handling and enable Legion end‑to‑end without breaking WV2/WV3 users.
+
 ### What comes next (without breaking users)
 - Implement the staged runner and stages to call existing logic incrementally (ingest → DEM selection → orthorectification → optional reprojection → tiling → COG → QA), emitting a STAC‑like manifest.
 - Add Redis + worker to execute jobs asynchronously; add PBS/Slurm adapters; optional Dask executor.
