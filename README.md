@@ -57,6 +57,38 @@ curl -s -X POST http://localhost:8000/jobs/ortho \
 
 You should receive a 202/201 response with a `job_id`. For this demo the API validates and records the job, and returns a stub manifest; execution will be wired to a queue/worker next (Redis/Celery or Dask, plus PBS/Slurm adapters).
 
+### Demo: execute existing orthorectification via staged runner
+
+The staged `runner` now maps the JSON request into the argparse‑style parameters expected by the current library and calls `lib.ortho_functions.process_image` (backwards compatible). To run it on your data, set absolute paths in the example payload:
+
+1) Edit `tools/schemas/examples/ortho_job.example.json`:
+```
+{
+  "inputs": {
+    "src": "/abs/path/to/src_dir_or_image",
+    "dem": "auto",
+    "config_file": "/app/doc/config.ini"
+  },
+  "output": { "dst": "/abs/path/to/dst_dir", "format": "GTiff", "gtiff_compression": "lzw" },
+  "processing": { "epsg": "auto", "outtype": "Byte", "stretch": "rf", "resample": "near" },
+  "execution": { "threads": 1, "parallel_processes": 1, "scratch": "/tmp/pgc" }
+}
+```
+
+2) Submit and retrieve status/manifest:
+```
+curl -s -X POST http://localhost:8000/jobs/ortho \
+  -H 'Content-Type: application/json' \
+  --data @tools/schemas/examples/ortho_job.example.json | jq
+
+curl -s http://localhost:8000/jobs/<job_id> | jq
+```
+
+Notes
+- The runner currently handles single‑image flows; batching/HPC modes will be added next.
+- When `dem` is set to `auto`, provide a valid `config_file` (see DEM Auto‑Selection below).
+- Outputs are written under `output.dst`; the manifest includes timings, GDAL version, and output paths.
+
 ### What comes next (without breaking users)
 - Implement the staged runner and stages to call existing logic incrementally (ingest → DEM selection → orthorectification → optional reprojection → tiling → COG → QA), emitting a STAC‑like manifest.
 - Add Redis + worker to execute jobs asynchronously; add PBS/Slurm adapters; optional Dask executor.
