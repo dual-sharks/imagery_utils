@@ -89,6 +89,45 @@ Notes
 - When `dem` is set to `auto`, provide a valid `config_file` (see DEM Auto‑Selection below).
 - Outputs are written under `output.dst`; the manifest includes timings, GDAL version, and output paths.
 
+### SceneCtx (context object)
+
+The staged pipeline passes a lightweight, immutable context (SceneCtx) between stages. Initial fields (to be expanded as stages are implemented):
+- `sensor` (str|None): sensor identifier (e.g., WV03), from profiles or inferred metadata
+- `rpc` (dict|None): parsed RPC metadata if available
+- `epsg` (int|None): native EPSG code
+- `footprints_wkt` (str|None): image footprint in WKT
+- `pixel_size` (float|None): native pixel size (m)
+- `chosen_dem` (str|None): URI/path of the selected DEM (when dem='auto')
+- `param_hash` (str|None): stable hash of input parameters affecting outputs
+- `meta` (dict): free‑form bag for stage‑specific annotations
+
+SceneCtx enables clear, testable stages (ingest → DEM selection → orthorectify → reprojection → tiling → COG → QA) without changing today’s CLIs.
+
+### STAC‑like manifest (output)
+
+Each run emits a STAC‑like JSON manifest describing inputs, processing, provenance, and outputs. Example (truncated):
+```
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "id": "ortho-<uuid>",
+  "properties": {
+    "proj:epsg": 3031,
+    "processing:stretch": "rf",
+    "processing:outtype": "Byte",
+    "processing:dem": "s3://…/pgc_dem.vrt",
+    "provenance:gdal_version": "3060400",
+    "provenance:timings": { "total_sec": 42.5, "stages": [ { "name": "orthorectify", "sec": 41.8 } ] }
+  },
+  "assets": {
+    "ortho": { "href": "s3://bucket/path/output.tif", "type": "image/tiff; application=geotiff" },
+    "cog":   { "href": "s3://bucket/path/output.cog.tif", "type": "image/tiff; application=geotiff; profile=cog" },
+    "qa":    { "href": "s3://bucket/path/qa.json", "type": "application/json" }
+  }
+}
+```
+“STAC‑like” means we follow the Item shape and common fields, while including additional processing/provenance fields (e.g., timings, GDAL/PROJ versions, chosen DEM). Full STAC conformance can be added later.
+
 ### What comes next (without breaking users)
 - Implement the staged runner and stages to call existing logic incrementally (ingest → DEM selection → orthorectification → optional reprojection → tiling → COG → QA), emitting a STAC‑like manifest.
 - Add Redis + worker to execute jobs asynchronously; add PBS/Slurm adapters; optional Dask executor.
