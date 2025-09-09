@@ -1,6 +1,69 @@
 # PGC Imagery Utils
 
 
+## DEMO: Modernization preview for GAIA Task 1
+
+> Task 1 - Enhancement of PGC ortho.py script: Enhance the existing `pgc_ortho.py` (or develop a new one if necessary) to support GAIA’s satellite image preprocessing, including projection, orthorectification, and related preprocessing functions.
+
+This branch includes a minimal, backwards‑compatible preview of the architecture we propose for Task 1. It keeps today’s CLI workflows intact while demonstrating how we will stage and scale the system.
+
+- Backwards compatible
+  - Existing entry points (`pgc_ortho.py`, `pgc_mosaic*.py`, `pgc_ndvi.py`, `pgc_pansharpen.py`) are unchanged.
+  - No behavioral changes to current tools.
+
+- Containerized baseline (Phase 0)
+  - `Dockerfile` pins a known‑good conda‑forge GDAL/PROJ stack.
+  - `Makefile` auto‑detects platform (arm64/amd64) and provides:
+    - `make build` – build the image
+    - `make shell` – open an interactive shell in the image
+    - `make run-ortho ...` – run `pgc_ortho.py` in the container
+
+- FastAPI control plane (scaffold)
+  - `tools/api/main.py` exposes:
+    - `GET /health`
+    - `POST /jobs/ortho` – validates requests against a JSON Schema and accepts a job
+    - `GET /jobs/{id}` – returns recorded job status (in‑memory for demo)
+  - Request schema: `tools/schemas/ortho_job.schema.json`
+  - Example payload: `tools/schemas/examples/ortho_job.example.json`
+
+- Staged package skeleton (no behavior changes yet)
+  - `src/imagery_utils/` contains a staged runner and empty stage modules:
+    - `context.py` (SceneCtx stub)
+    - `runner.py` (stubbed `run_ortho()`)
+    - `stages/` (ingest, dem_select, ortho, reproject, tiling, cog, qa stubs)
+  - This is the foundation for the thin CLI shim and testable stages (to be implemented next).
+
+- Sensor profile configuration (preview)
+  - `tools/profiles/` contains a YAML schema stub and example profiles (e.g., WV03; Legion placeholder).
+
+### Demo: run locally in a container
+
+1) Build the image
+```
+make build
+```
+
+2) Run the API (serves on localhost:8000)
+```
+make api
+```
+
+3) Submit a demo job (in a separate terminal)
+```
+curl -s -X POST http://localhost:8000/jobs/ortho \
+  -H 'Content-Type: application/json' \
+  --data @tools/schemas/examples/ortho_job.example.json | jq
+```
+
+You should receive a 202/201 response with a `job_id`. For this demo the API validates and records the job, and returns a stub manifest; execution will be wired to a queue/worker next (Redis/Celery or Dask, plus PBS/Slurm adapters).
+
+### What comes next (without breaking users)
+- Implement the staged runner and stages to call existing logic incrementally (ingest → DEM selection → orthorectification → optional reprojection → tiling → COG → QA), emitting a STAC‑like manifest.
+- Add Redis + worker to execute jobs asynchronously; add PBS/Slurm adapters; optional Dask executor.
+- Introduce YAML‑based sensor profiles and a DEM selection policy with multiple backends (local/HTTP COG/Azure), while preserving today’s `--dem auto` semantics.
+- Keep current flags and outputs stable; new capabilities will be additive (e.g., `--sensor`, `--executor`, `--target-epsg`, `--target-res`, `--to-cog`, `--manifest`).
+
+
 ## Introduction
 PGC Imagery Utils is a collection of commercial satellite imagery manipulation tools to handle batch processing of 
 Geoeye and DigitalGlobe/Maxar imagery. The tools can:
