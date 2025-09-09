@@ -1,0 +1,9 @@
+name: MAXAR_LEGION_PLACEHOLDER
+bands:
+  pan: 1
+  ms: []
+pixel_size: null
+pan_to_ms_ratio: null
+metadata_sources: []
+quirks:
+  note: placeholder profile pending official specs

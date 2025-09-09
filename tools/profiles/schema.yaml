@@ -1,0 +1,7 @@
+# Sensor profile schema (stub)
+# name: string
+# bands: mapping of logical band names to indices
+# pixel_size: number (meters)
+# pan_to_ms_ratio: number
+# metadata_sources: ["IMD", "RPB", "PVL", "TXT"]
+# quirks: free-form notes/flags
