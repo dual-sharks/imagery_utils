@@ -34,3 +34,13 @@ qa-gdalinfo: build
 	@mkdir -p qa
 	$(DOCKER) run --platform $(PLATFORM) --rm -v "$(PWD)":/workspace -w /workspace --entrypoint python $(IMAGE) \
 		/app/tools/collect_gdalinfo.py --out "$(OUT)" $(TARGETS)
+
+.PHONY: api api-stop
+api: build
+	$(DOCKER) run --platform $(PLATFORM) --rm -it -p 8000:8000 \
+		-v "$(PWD)":/workspace -w /workspace \
+		--entrypoint uvicorn $(IMAGE) tools.api.main:app --host 0.0.0.0 --port 8000
+
+api-stop:
+	# If running in detached mode, you'd stop here; current target runs in-foreground
+	@echo "Stop the foreground API with Ctrl-C"

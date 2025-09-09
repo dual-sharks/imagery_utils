@@ -9,6 +9,7 @@ RUN micromamba create -y -n pgc -c conda-forge \
     python=3.11 gdal=3.6.4 numpy scipy pandas geopandas rasterio shapely \
     postgresql psycopg2 sqlalchemy configargparse lxml pathlib2 python-dateutil \
     pytest rtree xlsxwriter tqdm alive-progress pyperclip globus-sdk globus-cli \
+    fastapi uvicorn jsonschema \
   && micromamba clean -a -y
 
 ENV PATH=/opt/conda/envs/pgc/bin:$PATH
